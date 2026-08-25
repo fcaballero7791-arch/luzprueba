@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control IoT</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+   
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background-color: #0b0e14;
+      color: #e0e6ed;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      font-weight: 500;
+      color: #ffffff;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 1.5rem;
+    }
+
+    .card {
+      background: #141923;
+      border-radius: 20px;
+      padding: 40px 50px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      border: 1px solid #1e2638;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .card h3 {
+      font-size: 0.9rem;
+      color: #5b6b8c;
+      margin-bottom: 25px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .status-text {
+      margin-bottom: 25px;
+      font-weight: 700;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      transition: color 0.3s ease;
+    }
+
+    .on {
+      color: #00adb5;
+      text-shadow: 0 0 12px rgba(0, 173, 181, 0.4);
+    }
+
+    .off {
+      color: #3a4763;
+    }
+
+    /* Interruptor Switch estético */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 80px;
+      height: 44px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1a2232;
+      transition: .4s;
+      border-radius: 44px;
+      border: 2px solid #28344e;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 32px;
+      width: 32px;
+      left: 4px;
+      bottom: 4px;
+      background-color: #5b6b8c;
+      transition: .4s;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    input:checked + .slider {
+      background-color: #142c3d;
+      border-color: #00adb5;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(36px);
+      background-color: #00adb5;
+      box-shadow: 0 0 12px #00adb5;
+    }
+  </style>
+
+  <!-- SDKs de Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+  <h1>Panel de Control</h1>
+
+  <div class="card">
+    <h3>Estado Interruptor</h3>
+    <div class="status-text off" id="led-status">APAGADO</div>
+    <label class="switch">
+      <input type="checkbox" id="led-toggle" onchange="toggleLED(this)">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <script>
+    // REEMPLAZA con la URL de tu base de datos Firebase Realtime Database
+    const firebaseConfig = {
+      databaseURL: "https://tu-proyecto-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Extraer ?id=xxx de la URL (si no se pone nada, por defecto usa 'casa_1')
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientID = urlParams.get('id') || 'casa_1';
+
+    const ledToggle = document.getElementById('led-toggle');
+    const ledStatus = document.getElementById('led-status');
+
+    // Escuchar los cambios de estado en tiempo real desde Firebase
+    db.ref(clientID + '/led_estado').on('value', (snap) => {
+      const isOn = snap.val() === true;
+      ledToggle.checked = isOn;
+      ledStatus.innerText = isOn ? "ENCENDIDO" : "APAGADO";
+      ledStatus.className = "status-text " + (isOn ? "on" : "off");
+    });
+
+    // Enviar la orden a Firebase al pulsar el interruptor de la web
+    function toggleLED(element) {
+      db.ref(clientID + '/led_estado').set(element.checked);
+    }
+  </script>
+</body>
+</html>
