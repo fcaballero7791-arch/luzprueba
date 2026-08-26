@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control IoT</title>
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+        }
+        .card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 340px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #1e3c72;
+            font-size: 24px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0 20px 0;
+            font-size: 14px;
+            color: #555;
+            border-left: 4px solid #2a5298;
+        }
+        #id-dispositivo {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        .control-group {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f1f2f6;
+            border-radius: 10px;
+        }
+        .control-label {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+            color: #2f3542;
+        }
+        .btn-toggle {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            background-color: #ff4757;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+        }
+        .btn-toggle.active {
+            background-color: #2ed573;
+            box-shadow: 0 4px 10px rgba(46, 213, 115, 0.3);
+        }
+        .btn-reset {
+            width: 100%;
+            padding: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            color: #6c757d;
+            background-color: #fff;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+        .btn-reset:hover {
+            background-color: #f1f2f6;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Panel Inteligente</h2>
+       
+        <div class="info-box">
+            Dispositivo: <span id="id-dispositivo">Cargando...</span>
+        </div>
+
+        <!-- Interruptor 1 -->
+        <div class="control-group">
+            <span class="control-label">Interruptor 1</span>
+            <button id="btnToggle1" class="btn-toggle" onclick="cambiarEstado(1)">APAGADO</button>
+        </div>
+
+        <!-- Interruptor 2 -->
+        <div class="control-group">
+            <span class="control-label">Interruptor 2</span>
+            <button id="btnToggle2" class="btn-toggle" onclick="cambiarEstado(2)">APAGADO</button>
+        </div>
+
+        <!-- Interruptor 3 -->
+        <div class="control-group">
+            <span class="control-label">Interruptor 3</span>
+            <button id="btnToggle3" class="btn-toggle" onclick="cambiarEstado(3)">APAGADO</button>
+        </div>
+       
+        <!-- Botón para cambiar de red / resetear WiFi -->
+        <button class="btn-reset" onclick="resetearWiFi()">🔄 Cambiar de Red / Resetear</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const userID = urlParams.get('id') || 'dispositivo_generico';
+
+        document.getElementById('id-dispositivo').innerText = userID;
+
+        const firebaseConfig = {
+            databaseURL: "https://luces-campo-default-rtdb.firebaseio.com"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const resetRef = database.ref(userID + '/reset_wifi');
+        let estados = { 1: false, 2: false, 3: false };
+
+        // Escuchar los 3 interruptores en Firebase
+        for (let i = 1; i <= 3; i++) {
+            const dbRef = database.ref(userID + '/led_estado_' + i);
+            const btn = document.getElementById('btnToggle' + i);
+
+            dbRef.on('value', (snapshot) => {
+                estados[i] = snapshot.val() === true;
+                if (estados[i]) {
+                    btn.innerText = "ENCENDIDO";
+                    btn.classList.add("active");
+                } else {
+                    btn.innerText = "APAGADO";
+                    btn.classList.remove("active");
+                }
+            });
+        }
+
+        // Alternar estado individual
+        function cambiarEstado(num) {
+            database.ref(userID + '/led_estado_' + num).set(!estados[num]);
+        }
+
+        // Resetear Wi-Fi desde la web
+        function resetearWiFi() {
+            if (confirm("¿Estás seguro de que quieres borrar la red Wi-Fi para configurarlo de nuevo?")) {
+                resetRef.set(true);
+                alert("Orden enviada. La tarjeta se reiniciará en unos segundos.");
+            }
+        }
+    </script>
+
+</body>
+</html>
